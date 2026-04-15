@@ -4,7 +4,7 @@
 //  Depende de Storage y de las utilidades de app.js.
 // ============================================================
 import Storage from './storage.js';
-import { showToast, formatDate, openModal, closeModal } from './app.js';
+import { showToast, formatDate, openModal, closeModal, icon } from './app.js';
 
 /** Previene XSS al insertar texto de usuario en el DOM. */
 function _esc(str) {
@@ -27,7 +27,7 @@ class ResourceList extends HTMLElement {
     if (resources.length === 0) {
       this.innerHTML = `
         <div class="empty-state">
-          <div class="empty-icon">👷</div>
+          <div class="empty-icon">${icon('resource')}</div>
           <p>No hay recursos humanos registrados. Crea uno con <strong>Nuevo Recurso</strong>.</p>
         </div>`;
       return;
@@ -59,8 +59,8 @@ class ResourceList extends HTMLElement {
                 <td>${_esc(r.arl)}</td>
                 <td>$${Number(r.salario||0).toLocaleString('es-CO')}</td>
                 <td style="display:flex;gap:4px;align-items:center;">
-                  <button class="btn-icon" title="Editar"   onclick="ResourcesModule.openEdit('${r.id}')">✏️</button>
-                  <button class="btn-icon" title="Eliminar" onclick="ResourcesModule.confirmDelete('${r.id}')">🗑️</button>
+                  <button class="btn-icon" title="Editar" aria-label="Editar" onclick="ResourcesModule.openEdit('${r.id}')">${icon('edit')}</button>
+                  <button class="btn-icon" title="Eliminar" aria-label="Eliminar" onclick="ResourcesModule.confirmDelete('${r.id}')">${icon('trash')}</button>
                 </td>
               </tr>`).join('')}
           </tbody>

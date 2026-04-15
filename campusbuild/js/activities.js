@@ -5,7 +5,16 @@
 //  cumplidos cuando todas sus actividades asociadas terminan.
 // ============================================================
 import Storage from './storage.js';
-import { showToast, formatDate, openModal, closeModal } from './app.js';
+import {
+  showToast,
+  formatDate,
+  openModal,
+  closeModal,
+  icon,
+  resolveMilestoneDate,
+  milestoneIsCompleted,
+  syncProjectStatus,
+} from './app.js';
 
 // ── Helper ────────────────────────────────────────────────────
 function _esc(str) {
@@ -20,6 +29,32 @@ function estadoBadge(e) {
   const map = { pendiente: 'badge-pending', 'en-proceso': 'badge-progress', terminada: 'badge-done' };
   const label = { pendiente: 'Pendiente', 'en-proceso': 'En Proceso', terminada: 'Terminada' };
   return `<span class="badge ${map[e] || 'badge-pending'}">${label[e] || e}</span>`;
+}
+
+function refreshProjectDependencies(projectId = '') {
+  if (projectId) syncProjectStatus(projectId);
+  document.querySelector('activity-list')?.render();
+  document.querySelector('milestone-list')?.render();
+  document.querySelector('project-list')?.render?.();
+  document.querySelector('dashboard-stats')?.render?.();
+  document.querySelector('activity-calendar')?.render?.();
+}
+
+function renderMilestoneActivities(projectId, assocIds = [], activities = Storage.getAll('activities')) {
+  const scopedActivities = projectId ? activities.filter(a => a.projectId === projectId) : [];
+
+  if (!projectId) {
+    return '<em style="color:var(--color-muted);font-size:13px;">Selecciona primero un proyecto.</em>';
+  }
+  if (!scopedActivities.length) {
+    return '<em style="color:var(--color-muted);font-size:13px;">Este proyecto no tiene actividades creadas.</em>';
+  }
+
+  return scopedActivities.map(a => `
+    <label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;cursor:pointer;">
+      <input type="checkbox" value="${a.id}" ${assocIds.includes(a.id) ? 'checked' : ''} class="ms-act-check">
+      ${_esc(a.nombre)}
+    </label>`).join('');
 }
 
 // ── Web Component: <activity-list> ───────────────────────────
@@ -39,7 +74,7 @@ class ActivityList extends HTMLElement {
     if (activities.length === 0) {
       this.innerHTML = `
         <div class="empty-state">
-          <div class="empty-icon">📝</div>
+          <div class="empty-icon">${icon('activities')}</div>
           <p>No hay actividades registradas. Crea una usando el botón <strong>Nueva Actividad</strong>.</p>
         </div>`;
       return;
@@ -72,8 +107,8 @@ class ActivityList extends HTMLElement {
                   <td>${a.duracion} día(s)</td>
                   <td>${estadoBadge(a.estado)}</td>
                   <td style="display:flex;gap:4px;align-items:center;">
-                    <button class="btn-icon" title="Editar" onclick="ActivitiesModule.openEdit('${a.id}')">✏️</button>
-                    <button class="btn-icon" title="Eliminar" onclick="ActivitiesModule.confirmDelete('${a.id}')">🗑️</button>
+                    <button class="btn-icon" title="Editar" aria-label="Editar" onclick="ActivitiesModule.openEdit('${a.id}')">${icon('edit')}</button>
+                    <button class="btn-icon" title="Eliminar" aria-label="Eliminar" onclick="ActivitiesModule.confirmDelete('${a.id}')">${icon('trash')}</button>
                   </td>
                 </tr>`;
     }).join('')}
@@ -100,7 +135,7 @@ class MilestoneList extends HTMLElement {
     if (milestones.length === 0) {
       this.innerHTML = `
         <div class="empty-state">
-          <div class="empty-icon">🏆</div>
+          <div class="empty-icon">${icon('trophy')}</div>
           <p>No hay hitos definidos. Crea uno usando el botón <strong>Nuevo Hito</strong>.</p>
         </div>`;
       return;
@@ -123,23 +158,24 @@ class MilestoneList extends HTMLElement {
       const proj = projects.find(p => p.id === m.projectId);
       const assocIds = m.activityIds || [];
       const assocActs = activities.filter(a => assocIds.includes(a.id));
-      const allDone = assocActs.length > 0 && assocActs.every(a => a.estado === 'terminada');
+      const allDone = milestoneIsCompleted(m, activities);
       const rowCls = allDone ? 'milestone-row completed' : 'milestone-row';
+      const details = [_esc(m.descripcion || '')].filter(Boolean).join(' · ');
       return `
                 <tr class="${rowCls}">
-                  <td><strong>${_esc(m.nombre)}</strong><br><small style="color:var(--color-muted)">${_esc(m.descripcion || '')}</small></td>
+                  <td><strong>${_esc(m.nombre)}</strong><br><small style="color:var(--color-muted)">${formatDate(resolveMilestoneDate(m, activities))}${details ? ` · ${details}` : ''}</small></td>
                   <td>${proj ? _esc(proj.nombre) : '—'}</td>
                   <td style="max-width:220px;font-size:12px;">
                     ${assocActs.length ? assocActs.map(a => `<span style="display:inline-block;background:var(--color-bg);border-radius:4px;padding:1px 7px;margin:2px;">${_esc(a.nombre)}</span>`).join('') : '<em style="color:var(--color-muted)">Sin actividades</em>'}
                   </td>
                   <td>
                     ${allDone
-          ? '<span class="badge badge-milestone-ok">✅ Cumplido</span>'
-          : '<span class="badge badge-milestone-no">⏳ Pendiente</span>'}
+          ? `<span class="badge badge-milestone-ok">${icon('check')} Cumplido</span>`
+          : `<span class="badge badge-milestone-no">${icon('pending')} Pendiente</span>`}
                   </td>
                   <td style="display:flex;gap:4px;align-items:center;">
-                    <button class="btn-icon" title="Editar" onclick="ActivitiesModule.openEditMilestone('${m.id}')">✏️</button>
-                    <button class="btn-icon" title="Eliminar" onclick="ActivitiesModule.confirmDeleteMilestone('${m.id}')">🗑️</button>
+                    <button class="btn-icon" title="Editar" aria-label="Editar" onclick="ActivitiesModule.openEditMilestone('${m.id}')">${icon('edit')}</button>
+                    <button class="btn-icon" title="Eliminar" aria-label="Eliminar" onclick="ActivitiesModule.confirmDeleteMilestone('${m.id}')">${icon('trash')}</button>
                   </td>
                 </tr>`;
     }).join('')}
@@ -241,8 +277,7 @@ function _saveActivity(id) {
     Storage.insert('activities', data); showToast('Actividad creada.', 'success');
   }
   closeModal();
-  document.querySelector('activity-list')?.render();
-  document.querySelector('milestone-list')?.render();
+  refreshProjectDependencies(projectId);
 }
 
 function confirmDelete(id) {
@@ -253,10 +288,16 @@ function confirmDelete(id) {
     body: `<p>¿Eliminar la actividad <strong>${_esc(a.nombre)}</strong>?</p>`,
     saveLabel: 'Eliminar', saveCls: 'btn-danger',
     onSave: () => {
+      Storage.getAll('milestones')
+        .filter(m => (m.activityIds || []).includes(id))
+        .forEach(m => {
+          Storage.update('milestones', m.id, {
+            activityIds: (m.activityIds || []).filter(activityId => activityId !== id),
+          });
+        });
       Storage.remove('activities', id);
       closeModal();
-      document.querySelector('activity-list')?.render();
-      document.querySelector('milestone-list')?.render();
+      refreshProjectDependencies(a.projectId);
       showToast('Actividad eliminada.', 'success');
     },
   });
@@ -284,22 +325,20 @@ function buildMilestoneForm(m = {}) {
       <input id="ms-desc" class="form-control" placeholder="Descripción breve..." value="${_esc(m.descripcion || '')}">
     </div>
     <div class="form-group">
+      <label class="form-label">Fecha del Hito *</label>
+      <input id="ms-fecha" type="date" class="form-control" value="${resolveMilestoneDate(m, activities)}">
+    </div>
+    <div class="form-group">
       <label class="form-label">Proyecto *</label>
-      <select id="ms-project" class="form-control">
+      <select id="ms-project" class="form-control" onchange="ActivitiesModule.onMilestoneProjectChange(this.value)">
         <option value="">Seleccionar...</option>
         ${projects.map(p => `<option value="${p.id}" ${m.projectId === p.id ? 'selected' : ''}>${_esc(p.nombre)}</option>`).join('')}
       </select>
     </div>
     <div class="form-group">
       <label class="form-label">Actividades asociadas</label>
-      <div style="max-height:150px;overflow-y:auto;border:1.5px solid var(--color-border);border-radius:var(--radius-sm);padding:8px;">
-        ${activities.length
-      ? activities.map(a => `
-              <label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;cursor:pointer;">
-                <input type="checkbox" value="${a.id}" ${assocIds.includes(a.id) ? 'checked' : ''} class="ms-act-check">
-                ${_esc(a.nombre)}
-              </label>`).join('')
-      : '<em style="color:var(--color-muted);font-size:13px;">No hay actividades creadas.</em>'}
+      <div id="ms-activities-box" style="max-height:150px;overflow-y:auto;border:1.5px solid var(--color-border);border-radius:var(--radius-sm);padding:8px;">
+        ${renderMilestoneActivities(m.projectId || '', assocIds, activities)}
       </div>
     </div>`;
 }
@@ -326,19 +365,29 @@ function openEditMilestone(id) {
 function _saveMilestone(id) {
   const nombre = document.getElementById('ms-nombre').value.trim();
   const descripcion = document.getElementById('ms-desc').value.trim();
+  const fecha = document.getElementById('ms-fecha').value;
   const projectId = document.getElementById('ms-project').value;
   const checks = [...document.querySelectorAll('.ms-act-check:checked')].map(c => c.value);
 
-  if (!nombre || !projectId) { showToast('Completa los campos requeridos.', 'danger'); return; }
+  if (!nombre || !projectId || !fecha) { showToast('Completa los campos requeridos.', 'danger'); return; }
 
-  const data = { nombre, descripcion, projectId, activityIds: checks };
+  const validActivityIds = Storage.getAll('activities')
+    .filter(a => a.projectId === projectId)
+    .map(a => a.id);
+  const data = {
+    nombre,
+    descripcion,
+    fecha,
+    projectId,
+    activityIds: checks.filter(activityId => validActivityIds.includes(activityId)),
+  };
   if (id) {
     Storage.update('milestones', id, data); showToast('Hito actualizado.', 'success');
   } else {
     Storage.insert('milestones', data); showToast('Hito creado.', 'success');
   }
   closeModal();
-  document.querySelector('milestone-list')?.render();
+  refreshProjectDependencies(projectId);
 }
 
 function confirmDeleteMilestone(id) {
@@ -351,17 +400,24 @@ function confirmDeleteMilestone(id) {
     onSave: () => {
       Storage.remove('milestones', id);
       closeModal();
-      document.querySelector('milestone-list')?.render();
+      refreshProjectDependencies(m.projectId);
       showToast('Hito eliminado.', 'success');
     },
   });
+}
+
+function onMilestoneProjectChange(projectId) {
+  const selected = [...document.querySelectorAll('.ms-act-check:checked')].map(c => c.value);
+  const box = document.getElementById('ms-activities-box');
+  if (!box) return;
+  box.innerHTML = renderMilestoneActivities(projectId, selected);
 }
 
 // ── API pública ─────────────────────────────────────────────────────
 // Expuesto en window para los onclick de la tabla renderizada en el DOM.
 const ActivitiesModule = {
   openNewActivity, openEdit, confirmDelete,
-  openNewMilestone, openEditMilestone, confirmDeleteMilestone,
+  openNewMilestone, openEditMilestone, confirmDeleteMilestone, onMilestoneProjectChange,
 };
 window.ActivitiesModule = ActivitiesModule;
 

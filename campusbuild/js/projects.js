@@ -4,7 +4,21 @@
 //  (openModal, closeModal, showToast, formatDate).
 // ============================================================
 import Storage from './storage.js';
-import { showToast, formatDate, openModal, closeModal } from './app.js';
+import {
+  showToast,
+  formatDate,
+  openModal,
+  closeModal,
+  icon,
+  getProjectCompletion,
+  syncProjectStatus,
+} from './app.js';
+
+function refreshProjectViews() {
+  document.querySelector('project-list')?.render();
+  document.querySelector('dashboard-stats')?.render?.();
+  document.querySelector('activity-calendar')?.render?.();
+}
 
 // ── Web Component: <project-list> ────────────────────────────
 class ProjectList extends HTMLElement {
@@ -19,7 +33,7 @@ class ProjectList extends HTMLElement {
     if (projects.length === 0) {
       this.innerHTML = `
         <div class="empty-state">
-          <div class="empty-icon">🏗️</div>
+          <div class="empty-icon">${icon('project')}</div>
           <p>No hay proyectos registrados. Haz clic en <strong>Nuevo Proyecto</strong> para comenzar.</p>
         </div>`;
       return;
@@ -28,26 +42,38 @@ class ProjectList extends HTMLElement {
     this.innerHTML = `
       <div class="project-cards">
         ${projects.map(p => {
+          const current = syncProjectStatus(p.id) || p;
           const acts = activities.filter(a => a.projectId === p.id);
           const done = acts.filter(a => a.estado === 'terminada').length;
+          const summary = getProjectCompletion(p.id);
+          const isFinished = current.estado === 'terminado';
           return `
             <div class="project-card">
               <div class="project-card-header">
                 <div>
-                  <div class="project-card-title">📋 ${_esc(p.nombre)}</div>
+                  <div class="project-card-title">${icon('activities')} <span>${_esc(current.nombre)}</span></div>
+                  <div class="project-card-status">
+                    <span class="badge ${isFinished ? 'badge-project-done' : 'badge-project-active'}">${isFinished ? 'Terminado' : 'Activo'}</span>
+                  </div>
                 </div>
                 <div style="display:flex;gap:4px;">
-                  <button class="btn-icon" title="Editar" onclick="ProjectsModule.openEdit('${p.id}')">✏️</button>
-                  <button class="btn-icon" title="Eliminar" onclick="ProjectsModule.confirmDelete('${p.id}')">🗑️</button>
+                  <button class="btn-icon" title="Editar" aria-label="Editar" onclick="ProjectsModule.openEdit('${current.id}')">${icon('edit')}</button>
+                  <button class="btn-icon" title="Eliminar" aria-label="Eliminar" onclick="ProjectsModule.confirmDelete('${current.id}')">${icon('trash')}</button>
                 </div>
               </div>
-              <div class="project-card-desc">${_esc(p.descripcion || '—')}</div>
+              <div class="project-card-desc">${_esc(current.descripcion || '—')}</div>
               <div class="project-card-meta">
-                <span>📅 Inicio: ${formatDate(p.fechaInicio)}</span>
-                <span>🏁 Fin: ${formatDate(p.fechaFin)}</span>
+                <span>${icon('calendar')} Inicio: ${formatDate(current.fechaInicio)}</span>
+                <span>${icon('flag')} Fin: ${formatDate(current.fechaFin)}</span>
               </div>
               <div class="project-card-meta">
-                <span>📊 Actividades: ${acts.length} | Terminadas: ${done}</span>
+                <span>${icon('chart')} Actividades: ${acts.length} | Terminadas: ${done}</span>
+                <span>${icon('trophy')} Hitos: ${summary.milestonesDone}/${summary.milestonesTotal}</span>
+              </div>
+              <div class="project-card-actions">
+                <button class="btn btn-ghost btn-sm" onclick="ProjectsModule.finishProject('${current.id}')" ${isFinished || !summary.canFinish ? 'disabled' : ''} title="${isFinished ? 'El proyecto ya fue terminado' : (summary.canFinish ? 'Marcar proyecto como terminado' : 'Completa primero todas las actividades e hitos')}">
+                  ${icon('check')} ${isFinished ? 'Proyecto terminado' : 'Terminar proyecto'}
+                </button>
               </div>
             </div>`;
         }).join('')}
@@ -120,11 +146,11 @@ function _save(id) {
     Storage.update('projects', id, data);
     showToast('Proyecto actualizado correctamente.', 'success');
   } else {
-    Storage.insert('projects', data);
+    Storage.insert('projects', { ...data, estado: 'activo', fechaTerminado: null });
     showToast('Proyecto creado correctamente.', 'success');
   }
   closeModal();
-  document.querySelector('project-list')?.render();
+  refreshProjectViews();
   refreshDashboard();
 }
 
@@ -147,9 +173,40 @@ function confirmDelete(id) {
       Storage.getAll('milestones').filter(m => m.projectId === id).forEach(m => Storage.remove('milestones', m.id));
       Storage.remove('projects', id);
       closeModal();
-      document.querySelector('project-list')?.render();
+      refreshProjectViews();
       refreshDashboard();
       showToast('Proyecto eliminado.', 'success');
+    },
+  });
+}
+
+function finishProject(id) {
+  const p = Storage.getById('projects', id);
+  if (!p) return;
+
+  const summary = getProjectCompletion(id);
+  if (!summary.canFinish) {
+    showToast(`No se puede terminar el proyecto. Actividades: ${summary.activitiesDone}/${summary.activitiesTotal}. Hitos: ${summary.milestonesDone}/${summary.milestonesTotal}.`, 'danger');
+    return;
+  }
+
+  openModal({
+    title: 'Terminar Proyecto',
+    body: `<p>¿Deseas marcar el proyecto <strong>${_esc(p.nombre)}</strong> como terminado?</p>`,
+    saveLabel: 'Terminar',
+    saveCls: 'btn-primary',
+    onSave: () => {
+      const today = new Date();
+      const fechaTerminado = [
+        today.getFullYear(),
+        String(today.getMonth() + 1).padStart(2, '0'),
+        String(today.getDate()).padStart(2, '0'),
+      ].join('-');
+      Storage.update('projects', id, { estado: 'terminado', fechaTerminado });
+      closeModal();
+      refreshProjectViews();
+      refreshDashboard();
+      showToast('Proyecto terminado correctamente.', 'success');
     },
   });
 }
@@ -166,7 +223,7 @@ function _esc(str) {
 
 // ── API pública ─────────────────────────────────────────────────────
 // Expuesto en window para los onclick de las tarjetas renderizadas en el DOM.
-const ProjectsModule = { openNew, openEdit, confirmDelete };
+const ProjectsModule = { openNew, openEdit, confirmDelete, finishProject };
 window.ProjectsModule = ProjectsModule;
 
 export default ProjectsModule;

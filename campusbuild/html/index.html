@@ -14,7 +14,11 @@
   <!-- ── Sidebar ── -->
   <aside class="sidebar">
     <div class="sidebar-logo">
-      <div class="logo-icon">🏗️</div>
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24" class="icon-svg">
+          <path d="M3 21h18M4 21V10l8-6 8 6v11" stroke="currentColor" fill="none" stroke-width="2"/>
+        </svg>
+      </div>
       <div>
         <span>CampusBuild</span>
         <small>Gestión de Proyectos</small>
@@ -24,25 +28,37 @@
     <nav class="sidebar-nav">
       <div class="nav-section-label">General</div>
       <a href="#" class="nav-link" data-view="dashboard">
-        <span class="icon">📊</span> Panel de Control
+        <svg viewBox="0 0 24 24" class="icon-svg">
+          <path d="M4 20V10M10 20V4M16 20v-8M22 20H2" stroke="currentColor" fill="none" stroke-width="2"/>
+        </svg> Panel de Control
       </a>
 
       <div class="nav-section-label">Proyectos</div>
       <a href="#" class="nav-link" data-view="projects">
-        <span class="icon">🏗️</span> Proyectos
+        <svg viewBox="0 0 24 24" class="icon-svg">
+          <path d="M3 21h18M4 21V10l8-6 8 6v11" stroke="currentColor" fill="none" stroke-width="2"/>
+        </svg> Proyectos
       </a>
       <a href="#" class="nav-link" data-view="activities">
-        <span class="icon">📝</span> Actividades e Hitos
+        <svg viewBox="0 0 24 24" class="icon-svg">
+          <path d="M4 4h16v16H4zM8 8h8M8 12h6M8 16h4" stroke="currentColor" fill="none" stroke-width="2"/>
+        </svg> Actividades e Hitos
       </a>
 
       <div class="nav-section-label">Personal</div>
       <a href="#" class="nav-link" data-view="resources">
-        <span class="icon">👷</span> Recursos Humanos
+        <svg viewBox="0 0 24 24" class="icon-svg">
+          <circle cx="12" cy="8" r="4" stroke="currentColor" fill="none" stroke-width="2"/>
+          <path d="M4 20c0-4 16-4 16 0" stroke="currentColor" fill="none" stroke-width="2"/>
+        </svg> Recursos Humanos
       </a>
 
       <div class="nav-section-label">Planificación</div>
       <a href="#" class="nav-link" data-view="calendar">
-        <span class="icon">📅</span> Cronograma
+        <svg viewBox="0 0 24 24" class="icon-svg">
+          <rect x="3" y="5" width="18" height="16" stroke="currentColor" fill="none" stroke-width="2"/>
+          <path d="M3 10h18M8 3v4M16 3v4" stroke="currentColor" fill="none" stroke-width="2"/>
+        </svg> Cronograma
       </a>
     </nav>
 
@@ -82,16 +98,24 @@
         </div>
         <div style="display:flex;gap:12px;flex-wrap:wrap;">
           <button class="btn btn-primary" onclick="navigate('projects');ProjectsModule.openNew()">
-            ➕ Nuevo Proyecto
+            <svg viewBox="0 0 24 24" class="icon-svg" aria-hidden="true">
+              <path d="M12 5v14M5 12h14" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round"/>
+            </svg> Nuevo Proyecto
           </button>
           <button class="btn btn-ghost" onclick="navigate('activities');ActivitiesModule.openNewActivity()">
-            ➕ Nueva Actividad
+            <svg viewBox="0 0 24 24" class="icon-svg" aria-hidden="true">
+              <path d="M12 5v14M5 12h14" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round"/>
+            </svg> Nueva Actividad
           </button>
           <button class="btn btn-ghost" onclick="navigate('resources');ResourcesModule.openNew()">
-            ➕ Nuevo Recurso
+            <svg viewBox="0 0 24 24" class="icon-svg" aria-hidden="true">
+              <path d="M12 5v14M5 12h14" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round"/>
+            </svg> Nuevo Recurso
           </button>
           <button class="btn btn-ghost" onclick="navigate('activities');ActivitiesModule.openNewMilestone()">
-            ➕ Nuevo Hito
+            <svg viewBox="0 0 24 24" class="icon-svg" aria-hidden="true">
+              <path d="M12 5v14M5 12h14" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round"/>
+            </svg> Nuevo Hito
           </button>
         </div>
       </section>
@@ -101,7 +125,9 @@
         <div class="section-header">
           <h1 class="section-title">Proyectos de Construcción</h1>
           <button class="btn btn-primary" id="btn-new-project" onclick="ProjectsModule.openNew()">
-            ➕ Nuevo Proyecto
+            <svg viewBox="0 0 24 24" class="icon-svg" aria-hidden="true">
+              <path d="M12 5v14M5 12h14" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round"/>
+            </svg> Nuevo Proyecto
           </button>
         </div>
         <project-list></project-list>
@@ -113,7 +139,9 @@
         <div class="section-header">
           <h1 class="section-title">Actividades</h1>
           <button class="btn btn-primary" onclick="ActivitiesModule.openNewActivity()">
-            ➕ Nueva Actividad
+            <svg viewBox="0 0 24 24" class="icon-svg" aria-hidden="true">
+              <path d="M12 5v14M5 12h14" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round"/>
+            </svg> Nueva Actividad
           </button>
         </div>
         <activity-list></activity-list>
@@ -123,7 +151,10 @@
         <div class="section-header">
           <h2 class="section-title">Hitos del Proyecto</h2>
           <button class="btn btn-ghost" onclick="ActivitiesModule.openNewMilestone()">
-            🏆 Nuevo Hito
+            <svg viewBox="0 0 24 24" class="icon-svg" aria-hidden="true">
+              <path d="M8 4h8v3a4 4 0 0 1-8 0V4Z" stroke="currentColor" fill="none" stroke-width="2"/>
+              <path d="M9 16h6M12 11v5m-5-9H4a3 3 0 0 0 3 3m10-3h3a3 3 0 0 1-3 3M10 20h4" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round"/>
+            </svg> Nuevo Hito
           </button>
         </div>
         <milestone-list></milestone-list>
@@ -135,7 +166,9 @@
         <div class="section-header">
           <h1 class="section-title">Recursos Humanos</h1>
           <button class="btn btn-primary" onclick="ResourcesModule.openNew()">
-            ➕ Nuevo Recurso
+            <svg viewBox="0 0 24 24" class="icon-svg" aria-hidden="true">
+              <path d="M12 5v14M5 12h14" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round"/>
+            </svg> Nuevo Recurso
           </button>
         </div>
         <resource-list></resource-list>

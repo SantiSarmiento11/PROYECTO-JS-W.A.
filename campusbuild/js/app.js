@@ -11,6 +11,134 @@ function _esc(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+const ICONS = {
+  project: `
+    <svg viewBox="0 0 24 24" class="icon-svg" aria-hidden="true">
+      <path d="M3 21h18M4 21V10l8-6 8 6v11" stroke="currentColor" fill="none" stroke-width="2"/>
+    </svg>`,
+  activities: `
+    <svg viewBox="0 0 24 24" class="icon-svg" aria-hidden="true">
+      <path d="M4 4h16v16H4zM8 8h8M8 12h6M8 16h4" stroke="currentColor" fill="none" stroke-width="2"/>
+    </svg>`,
+  resource: `
+    <svg viewBox="0 0 24 24" class="icon-svg" aria-hidden="true">
+      <circle cx="12" cy="8" r="4" stroke="currentColor" fill="none" stroke-width="2"/>
+      <path d="M4 20c0-4 16-4 16 0" stroke="currentColor" fill="none" stroke-width="2"/>
+    </svg>`,
+  calendar: `
+    <svg viewBox="0 0 24 24" class="icon-svg" aria-hidden="true">
+      <rect x="3" y="5" width="18" height="16" stroke="currentColor" fill="none" stroke-width="2"/>
+      <path d="M3 10h18M8 3v4M16 3v4" stroke="currentColor" fill="none" stroke-width="2"/>
+    </svg>`,
+  flag: `
+    <svg viewBox="0 0 24 24" class="icon-svg" aria-hidden="true">
+      <path d="M5 21V4m0 0h10l-2 3 2 3H5" stroke="currentColor" fill="none" stroke-width="2" stroke-linejoin="round"/>
+    </svg>`,
+  chart: `
+    <svg viewBox="0 0 24 24" class="icon-svg" aria-hidden="true">
+      <path d="M4 20V10M10 20V4M16 20v-8M22 20H2" stroke="currentColor" fill="none" stroke-width="2"/>
+    </svg>`,
+  check: `
+    <svg viewBox="0 0 24 24" class="icon-svg" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" stroke="currentColor" fill="none" stroke-width="2"/>
+      <path d="m8 12 2.5 2.5L16 9" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`,
+  bolt: `
+    <svg viewBox="0 0 24 24" class="icon-svg" aria-hidden="true">
+      <path d="M13 2 6 13h5l-1 9 8-12h-5l0-8Z" stroke="currentColor" fill="none" stroke-width="2" stroke-linejoin="round"/>
+    </svg>`,
+  pending: `
+    <svg viewBox="0 0 24 24" class="icon-svg" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" stroke="currentColor" fill="none" stroke-width="2"/>
+      <path d="M12 7v5l3 2" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`,
+  trophy: `
+    <svg viewBox="0 0 24 24" class="icon-svg" aria-hidden="true">
+      <path d="M8 4h8v3a4 4 0 0 1-8 0V4Z" stroke="currentColor" fill="none" stroke-width="2"/>
+      <path d="M9 16h6M12 11v5m-5-9H4a3 3 0 0 0 3 3m10-3h3a3 3 0 0 1-3 3M10 20h4" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round"/>
+    </svg>`,
+  plus: `
+    <svg viewBox="0 0 24 24" class="icon-svg" aria-hidden="true">
+      <path d="M12 5v14M5 12h14" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round"/>
+    </svg>`,
+  edit: `
+    <svg viewBox="0 0 24 24" class="icon-svg" aria-hidden="true">
+      <path d="m4 20 4.5-1 9-9a2.1 2.1 0 1 0-3-3l-9 9L4 20Z" stroke="currentColor" fill="none" stroke-width="2" stroke-linejoin="round"/>
+    </svg>`,
+  trash: `
+    <svg viewBox="0 0 24 24" class="icon-svg" aria-hidden="true">
+      <path d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`
+};
+
+export function icon(name, extraClass = '') {
+  const markup = ICONS[name];
+  if (!markup) return '';
+  return extraClass ? markup.replace('class="icon-svg"', `class="icon-svg ${extraClass}"`) : markup;
+}
+
+function addDays(dateStr, days) {
+  if (!dateStr) return '';
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const base = new Date(year, month - 1, day);
+  base.setDate(base.getDate() + days);
+  return [
+    base.getFullYear(),
+    String(base.getMonth() + 1).padStart(2, '0'),
+    String(base.getDate()).padStart(2, '0'),
+  ].join('-');
+}
+
+export function activityEndDate(activity) {
+  const duration = Math.max(1, Number(activity?.duracion || 1));
+  return addDays(activity?.fechaInicio, duration - 1);
+}
+
+export function milestoneIsCompleted(milestone, activities = Storage.getAll('activities')) {
+  const assocIds = milestone?.activityIds || [];
+  const assocActs = activities.filter(a => assocIds.includes(a.id));
+  return assocActs.length > 0 && assocActs.every(a => a.estado === 'terminada');
+}
+
+export function resolveMilestoneDate(milestone, activities = Storage.getAll('activities')) {
+  if (milestone?.fecha) return milestone.fecha;
+  const assocIds = milestone?.activityIds || [];
+  const assocActs = activities.filter(a => assocIds.includes(a.id));
+  if (!assocActs.length) return '';
+  return assocActs.map(activityEndDate).filter(Boolean).sort().at(-1) || '';
+}
+
+export function getProjectCompletion(projectId) {
+  const activities = Storage.getAll('activities').filter(a => a.projectId === projectId);
+  const milestones = Storage.getAll('milestones').filter(m => m.projectId === projectId);
+  const activitiesDone = activities.filter(a => a.estado === 'terminada').length;
+  const milestonesDone = milestones.filter(m => milestoneIsCompleted(m, activities)).length;
+  const allActivitiesDone = activities.length > 0 && activitiesDone === activities.length;
+  const allMilestonesDone = milestones.length === 0 || milestonesDone === milestones.length;
+
+  return {
+    activitiesTotal: activities.length,
+    activitiesDone,
+    milestonesTotal: milestones.length,
+    milestonesDone,
+    canFinish: allActivitiesDone && allMilestonesDone,
+  };
+}
+
+export function syncProjectStatus(projectId) {
+  const project = Storage.getById('projects', projectId);
+  if (!project) return null;
+
+  const summary = getProjectCompletion(projectId);
+  if (!project.estado) {
+    return Storage.update('projects', projectId, { estado: 'activo', fechaTerminado: null });
+  }
+  if (project.estado === 'terminado' && !summary.canFinish) {
+    return Storage.update('projects', projectId, { estado: 'activo', fechaTerminado: null });
+  }
+  return project;
+}
+
 // ── Utilidad de fechas (exportada) ───────────────────────────
 /**
  * Convierte fecha ISO YYYY-MM-DD al formato local DD/MM/AAAA.
@@ -129,45 +257,42 @@ class DashboardStats extends HTMLElement {
     const inProcess = activities.filter(a => a.estado === 'en-proceso').length;
     const pending   = activities.filter(a => a.estado === 'pendiente').length;
 
-    const completedMs = milestones.filter(m => {
-      const acts = (m.activityIds||[]).map(id => activities.find(a => a.id === id)).filter(Boolean);
-      return acts.length > 0 && acts.every(a => a.estado === 'terminada');
-    }).length;
+    const completedMs = milestones.filter(m => milestoneIsCompleted(m, activities)).length;
 
     this.innerHTML = `
       <div class="stat-grid">
         <div class="stat-card">
-          <div class="stat-icon">🏗️</div>
+          <div class="stat-icon">${icon('project')}</div>
           <div class="stat-value">${projects.length}</div>
           <div class="stat-label">Proyectos</div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon">📝</div>
+          <div class="stat-icon">${icon('activities')}</div>
           <div class="stat-value">${activities.length}</div>
           <div class="stat-label">Actividades</div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon">✅</div>
+          <div class="stat-icon">${icon('check')}</div>
           <div class="stat-value" style="color:var(--color-success)">${done}</div>
           <div class="stat-label">Terminadas</div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon">⚡</div>
+          <div class="stat-icon">${icon('bolt')}</div>
           <div class="stat-value" style="color:var(--color-primary)">${inProcess}</div>
           <div class="stat-label">En Proceso</div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon">⏳</div>
+          <div class="stat-icon">${icon('pending')}</div>
           <div class="stat-value" style="color:var(--color-warning)">${pending}</div>
           <div class="stat-label">Pendientes</div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon">👷</div>
+          <div class="stat-icon">${icon('resource')}</div>
           <div class="stat-value">${resources.length}</div>
           <div class="stat-label">Recursos Humanos</div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon">🏆</div>
+          <div class="stat-icon">${icon('trophy')}</div>
           <div class="stat-value">${completedMs}/${milestones.length}</div>
           <div class="stat-label">Hitos Cumplidos</div>
         </div>
@@ -191,7 +316,7 @@ function renderDashboard() {
   if (!el) return;
 
   if (!activities.length) {
-    el.innerHTML = `<div class="empty-state" style="padding:30px 0;"><div class="empty-icon">📋</div><p>No hay actividades registradas aún.</p></div>`;
+    el.innerHTML = `<div class="empty-state" style="padding:30px 0;"><div class="empty-icon">${icon('activities')}</div><p>No hay actividades registradas aún.</p></div>`;
     return;
   }
 
