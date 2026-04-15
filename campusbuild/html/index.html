@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CampusBuild – Gestión de Proyectos</title>
+  <meta name="description" content="Plataforma centralizada para gestionar proyectos, actividades, hitos y recursos humanos de CampusBuild.">
+  <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">🏗️</div>
+      <div>
+        <span>CampusBuild</span>
+        <small>Gestión de Proyectos</small>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">General</div>
+      <a href="#" class="nav-link" data-view="dashboard">
+        <span class="icon">📊</span> Panel de Control
+      </a>
+
+      <div class="nav-section-label">Proyectos</div>
+      <a href="#" class="nav-link" data-view="projects">
+        <span class="icon">🏗️</span> Proyectos
+      </a>
+      <a href="#" class="nav-link" data-view="activities">
+        <span class="icon">📝</span> Actividades e Hitos
+      </a>
+
+      <div class="nav-section-label">Personal</div>
+      <a href="#" class="nav-link" data-view="resources">
+        <span class="icon">👷</span> Recursos Humanos
+      </a>
+
+      <div class="nav-section-label">Planificación</div>
+      <a href="#" class="nav-link" data-view="calendar">
+        <span class="icon">📅</span> Cronograma
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      &copy; 2025 CampusBuild
+    </div>
+  </aside>
+
+  <!-- ── Main Area ── -->
+  <div class="main-area">
+
+    <!-- Topbar -->
+    <header class="topbar">
+      <div>
+        <div class="topbar-title" id="topbar-title">Panel de Control</div>
+        <div class="topbar-subtitle" id="topbar-subtitle">Resumen general del sistema</div>
+      </div>
+    </header>
+
+    <!-- Page Content -->
+    <main class="page-content">
+
+      <!-- ════════════════════════ DASHBOARD ════════════════════════ -->
+      <section id="view-dashboard" class="view">
+        <dashboard-stats></dashboard-stats>
+
+        <div class="section-header">
+          <h2 class="section-title">Actividades Recientes</h2>
+          <button class="btn btn-ghost btn-sm" onclick="navigate('activities')">Ver todas →</button>
+        </div>
+        <div id="recent-activities"></div>
+
+        <div style="height:24px;"></div>
+
+        <div class="section-header">
+          <h2 class="section-title">Accesos Rápidos</h2>
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+          <button class="btn btn-primary" onclick="navigate('projects');ProjectsModule.openNew()">
+            ➕ Nuevo Proyecto
+          </button>
+          <button class="btn btn-ghost" onclick="navigate('activities');ActivitiesModule.openNewActivity()">
+            ➕ Nueva Actividad
+          </button>
+          <button class="btn btn-ghost" onclick="navigate('resources');ResourcesModule.openNew()">
+            ➕ Nuevo Recurso
+          </button>
+          <button class="btn btn-ghost" onclick="navigate('activities');ActivitiesModule.openNewMilestone()">
+            ➕ Nuevo Hito
+          </button>
+        </div>
+      </section>
+
+      <!-- ════════════════════════ PROJECTS ════════════════════════ -->
+      <section id="view-projects" class="view">
+        <div class="section-header">
+          <h1 class="section-title">Proyectos de Construcción</h1>
+          <button class="btn btn-primary" id="btn-new-project" onclick="ProjectsModule.openNew()">
+            ➕ Nuevo Proyecto
+          </button>
+        </div>
+        <project-list></project-list>
+      </section>
+
+      <!-- ═══════════════════ ACTIVITIES & MILESTONES ══════════════ -->
+      <section id="view-activities" class="view">
+
+        <div class="section-header">
+          <h1 class="section-title">Actividades</h1>
+          <button class="btn btn-primary" onclick="ActivitiesModule.openNewActivity()">
+            ➕ Nueva Actividad
+          </button>
+        </div>
+        <activity-list></activity-list>
+
+        <div style="height:32px;"></div>
+
+        <div class="section-header">
+          <h2 class="section-title">Hitos del Proyecto</h2>
+          <button class="btn btn-ghost" onclick="ActivitiesModule.openNewMilestone()">
+            🏆 Nuevo Hito
+          </button>
+        </div>
+        <milestone-list></milestone-list>
+
+      </section>
+
+      <!-- ════════════════════════ RESOURCES ═══════════════════════ -->
+      <section id="view-resources" class="view">
+        <div class="section-header">
+          <h1 class="section-title">Recursos Humanos</h1>
+          <button class="btn btn-primary" onclick="ResourcesModule.openNew()">
+            ➕ Nuevo Recurso
+          </button>
+        </div>
+        <resource-list></resource-list>
+      </section>
+
+      <!-- ════════════════════════ CALENDAR ════════════════════════ -->
+      <section id="view-calendar" class="view">
+        <h1 class="section-title" style="margin-bottom:18px;">Cronograma de Actividades</h1>
+        <activity-calendar></activity-calendar>
+      </section>
+
+    </main>
+  </div><!-- /main-area -->
+
+</div><!-- /app-shell -->
+
+<!-- ── Global Modal ── -->
+<div class="modal-backdrop" id="modal-backdrop">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-header">
+      <h2 class="modal-title" id="modal-title">Modal</h2>
+      <button class="modal-close" id="modal-close-btn" aria-label="Cerrar">&times;</button>
+    </div>
+    <div id="modal-body"></div>
+    <div class="form-actions">
+      <button class="btn btn-ghost" id="modal-cancel-btn">Cancelar</button>
+      <button class="btn btn-primary" id="modal-save">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Toast Container ── -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- ── Scripts (ES Modules) ── -->
+<script type="module" src="../js/app.js"></script>
+<script type="module" src="../js/projects.js"></script>
+<script type="module" src="../js/activities.js"></script>
+<script type="module" src="../js/resources.js"></script>
+<script type="module" src="../js/calendar.js"></script>
+
+</body>
+</html>
